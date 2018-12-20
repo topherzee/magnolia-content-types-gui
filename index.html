@@ -11,10 +11,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.21/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@3.12.0/dist/js-yaml.min.js"></script>
+
+    <style>
+      .prop-control{
+        margin-left: 3px;
+        margin-right: 10px;
+      }
+    </style>
 </head>
 <body>
 
-<div id="content-types" style="margin:auto;max-width:500px;">
+<div id="content-types" style="margin:auto;max-width:700px;">
     <h1>Magnolia Content Type Generator</h1>
     <br>
     <h2>Settings</h2>
@@ -32,13 +39,22 @@
         <button @click="deleteProp(index)">-</button>
     </div>
     <div><h3>Add a New Property:</h3>
-        <label>Name</label><input v-model="newPropName"/>
+        <label>Name</label><input v-model="newPropName" class="prop-control"/>
+
         <label>Type</label>
-        <select v-model="newPropType">
+        <select v-model="newPropType" class="prop-control">
             <option>String</option>
             <option>Date</option>
             <option>Boolean</option>
+            <option>Decimal</option>
+            <option>Long</option>
+            <option>Double</option>
         </select>
+
+        <label>Multiple?</label><input v-model="newPropMultiple" type="checkbox" class="prop-control"/>
+        <label>Required?</label><input v-model="newPropRequired" type="checkbox" class="prop-control"/>
+        <label>i18n?</label><input v-model="newPropi18n" type="checkbox" class="prop-control"/>
+
         <button @click="addNewProp()" :disabled="newPropName===''">+</button>
         </button>
     </div>
@@ -47,7 +63,10 @@
     <h2>Output</h2>
     <hr>
     <br>
-    <textarea rows="10" style="min-width:400px">{{ contentTypeAsYaml }}</textarea>
+    Copy into your contentType YAML file:
+    <br>
+    <br>
+    <textarea rows="20" style="min-width:400px; font-family:monospace">{{ contentTypeAsYaml }}</textarea>
 </div>
 
 <script>
@@ -56,7 +75,7 @@
     // might need to avoid spaces
     const unnamedProp = 'Unnamed Property';
     // allowedPropTypes does not include String, because we do not add that in the yaml definition
-    const allowedPropTypes = ['Date', 'Boolean'];
+    const allowedPropTypes = ['Date', 'Boolean', 'Decimal', 'Long', 'Double'];
 
     // todo allow for the user to supply an example of the data that would be in that field
     new Vue({
@@ -67,7 +86,11 @@
                 properties: [],
                 eventVal: '',
                 newPropName: '',
-                newPropType: 'String'
+                newPropType: 'String',
+                newPropMultiple: false,
+                newPropRequired: false,
+                newPropi18n: false
+
             }
         },
         computed: {
@@ -77,7 +100,7 @@
             },
             contentTypeAsJson() {
                 return {
-                    dataSources: {
+                    datasource: {
                         workspace: this.workspaceName,
                         autoCreate: true
                     },
@@ -90,12 +113,24 @@
         methods: {
             addNewProp() {
                 if (!this.newPropName) this.newPropName = unnamedProp;
-                if (this.newPropType && allowedPropTypes.includes(this.newPropType)) {
-                    this.properties.push({name: this.newPropName, type: this.newPropType});
-                } else {
-                    this.properties.push({name: this.newPropName});
-                    this.newPropName = '';
+
+                var newProp = {};
+                newProp.name = this.newPropName;
+                if (this.newPropType && allowedPropTypes.includes(this.newPropType)){
+                  newProp.type = this.newPropType;
                 }
+                if (this.newPropMultiple) newProp.multiple = true;
+                if (this.newPropRequired) newProp.required = true;
+                if (this.newPropi18n) newProp.i18n = true;
+
+                this.properties.push(newProp);
+
+                // Reset the controls.
+                this.newPropName = '';
+                this.newPropMultiple = false;
+                this.newPropRequired = false;
+                this.newPropi18n = false;
+
             },
             deleteProp(indexToDelete) {
                 this.properties.splice(indexToDelete, 1);
